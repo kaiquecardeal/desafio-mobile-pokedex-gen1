@@ -1,4 +1,4 @@
-/// Modelo de dados que representa um Pokémon
+// TODO Implement this library./// Modelo de dados que representa um Pokémon
 ///
 /// Esta classe contém todas as informações de um Pokémon obtidas da PokéAPI,
 /// incluindo dados básicos, físicos e de evolução.

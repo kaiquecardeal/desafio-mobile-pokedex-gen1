@@ -22,19 +22,24 @@ class PokemonService {
     int limit = 20,
     int offset = 0,
   }) async {
-    // Garante que os IDs estejam entre 1 e 151 (Geração 1)
-    final start = (offset + 1).clamp(1, 151);
-    final end = (offset + limit).clamp(1, 151);
-    if (start > end) return [];
+    try {
+      final start = (offset + 1).clamp(1, 151);
+      final end = (offset + limit).clamp(1, 151);
+      if (start > end) return [];
 
-    // Cria uma lista de futures para buscar múltiplos Pokémons em paralelo
-    final futures = <Future<Pokemon>>[];
-    for (int i = start; i <= end; i++) {
-      futures.add(fetchPokemonById(i));
+      final futures = <Future<Pokemon>>[];
+      for (int i = start; i <= end; i++) {
+        futures.add(fetchPokemonById(i));
+      }
+
+      // Remover eagerError e adicionar tratamento de erro
+      final results = await Future.wait(futures, eagerError: true);
+
+      return results;
+    } catch (e) {
+      print('Erro ao buscar pokémons: $e');
+      return [];
     }
-    // Aguarda todas as requisições completarem
-    final results = await Future.wait(futures, eagerError: false);
-    return results;
   }
 
   /// Busca um Pokémon específico pelo ID
@@ -44,45 +49,42 @@ class PokemonService {
   /// Retorna um objeto Pokemon com todos os dados.
   /// Também busca a descrição em uma segunda requisição à API de species.
   Future<Pokemon> fetchPokemonById(int id) async {
-    final response = await http
-        .get(Uri.parse('$baseUrl$id'))
-        .timeout(const Duration(seconds: 10));
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl$id'))
+          .timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Falha ao carregar Pokémon $id: ${response.statusCode}',
+        );
+      }
+
       final json = jsonDecode(response.body);
 
-      // Busca a descrição do Pokémon em outro endpoint
-      String description = 'Sem descrição disponível';
+      // Adicione o restante da implementação aqui
+      String description = '';
       try {
-        final speciesResponse = await http
-            .get(Uri.parse('https://pokeapi.co/api/v2/pokemon-species/$id/'))
-            .timeout(const Duration(seconds: 10));
+        final speciesUrl = json['species']['url'];
+        final speciesResponse = await http.get(Uri.parse(speciesUrl));
         if (speciesResponse.statusCode == 200) {
-          final speciesData = jsonDecode(speciesResponse.body);
-          if (speciesData['flavor_text_entries'] != null) {
-            final entries =
-                speciesData['flavor_text_entries'] as List<dynamic>?;
-            if (entries != null && entries.isNotEmpty) {
-              // Busca a entrada em inglês
-              final entry = entries.cast<Map<String, dynamic>?>().firstWhere(
-                (e) => e?['language']?['name'] == 'en',
-                orElse: () => null,
-              );
-              if (entry != null) {
-                // Remove quebras de linha especiais
-                description = (entry['flavor_text'] as String)
-                    .replaceAll('\n', ' ')
-                    .replaceAll('\f', ' ');
-              }
-            }
-          }
+          final speciesJson = jsonDecode(speciesResponse.body);
+          description = (speciesJson['flavor_text_entries'] as List)
+              .firstWhere(
+                (entry) => entry['language']['name'] == 'en',
+                orElse: () => {'flavor_text': 'No description available'},
+              )['flavor_text']
+              .replaceAll('\n', ' ')
+              .replaceAll('\f', ' ');
         }
       } catch (e) {
-        print('Erro ao buscar descrição para Pokémon #$id: $e');
+        print('Erro ao buscar descrição: $e');
       }
+
       return Pokemon.fromJson(json, description);
-    } else {
-      throw Exception('Falha ao carregar Pokémon');
+    } catch (e) {
+      print('Erro ao buscar Pokémon $id: $e');
+      rethrow;
     }
   }
 
