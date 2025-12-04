@@ -18,7 +18,6 @@ class _TeamBuilderScreenState extends State<TeamBuilderScreen> {
   final PokemonService _pokemonService = PokemonService();
   List<Pokemon> _selectedPokemon = [];
   List<Team> _savedTeams = [];
-  bool _isLoading = false;
   Team? _editingTeam;
 
   @override

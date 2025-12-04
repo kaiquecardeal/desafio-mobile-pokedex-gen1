@@ -6,9 +6,13 @@ import '../db/database_helper.dart';
 
 class PokemonDetailScreen extends StatefulWidget {
   final Pokemon pokemon;
+  final bool isFromTeamBuilder;
 
-  const PokemonDetailScreen({Key? key, required this.pokemon})
-    : super(key: key);
+  const PokemonDetailScreen({
+    Key? key,
+    required this.pokemon,
+    this.isFromTeamBuilder = false,
+  }) : super(key: key);
 
   @override
   State<PokemonDetailScreen> createState() => _PokemonDetailScreenState();
@@ -86,6 +90,13 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
               tooltip: 'Favoritar',
               onPressed: _toggleFavorite,
             ),
+            if (widget.isFromTeamBuilder)
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  Navigator.pop(context, widget.pokemon);
+                },
+              ),
           ],
         ),
         title: Text(widget.pokemon.name.toUpperCase()),
@@ -99,11 +110,11 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [typeColor, typeColor.withOpacity(0.5)],
-                ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [typeColor, typeColor.withValues(alpha: 0.5)],
+            ),
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
